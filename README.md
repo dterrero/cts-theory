@@ -13,7 +13,7 @@ In CTS, both time dilation and gravitational effects arise from **suppression of
 This is not a reformulation of SR/GR but a **physics-first alternative** that derives the same predictions from a different ontology: energy acts through space to update causal states and time emerges as a secondary effect.
 
 🔬 **Live Simulation**:  
-👉 [View interactive page](https://github.com/dterrero/cts-theory/)
+👉 [View interactive page](https://dterrero.github.io/cts-theory/)
 
 ---
 
