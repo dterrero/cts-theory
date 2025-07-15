@@ -6,11 +6,11 @@
 
 ## 🧠 Overview
 
-This repository presents the full formulation of the **Causal Tick Suppression (CTS)** theory — a first-principles physical framework in which relativistic effects emerge from the dynamics of internal causal transformations (tick rates), not from the geometry of spacetime.
+This repository presents the full formulation of the **Causal Tick Suppression (CTS)** theory, a first-principles physical framework in which relativistic effects emerge from the dynamics of internal causal transformations (tick rates), not from the geometry of spacetime.
 
 In CTS, both time dilation and gravitational effects arise from **suppression of a system’s intrinsic transformation rate** due to energy diversion caused by motion and gravitational binding. The theory replaces the geometric foundation of Special and General Relativity with a mechanistic model grounded in causal energy redistribution.
 
-This is not a reformulation of SR/GR but a **physics-first alternative** that derives the same predictions from a different ontology: energy acts through space to update causal states — and time emerges as a secondary effect.
+This is not a reformulation of SR/GR but a **physics-first alternative** that derives the same predictions from a different ontology: energy acts through space to update causal states and time emerges as a secondary effect.
 
 
 ---
