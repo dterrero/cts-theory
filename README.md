@@ -19,8 +19,8 @@ This is not a reformulation of SR/GR but a **physics-first alternative** that de
 
 - ✅ Derivation of the **Lorentz factor** from the causal postulate \( E_k = mad \)
 - ✅ Gravitational redshift from internal energy binding via \( \Phi(x) \)
-- ✅ Unified tick dilation formula:  R_eff = (mc² / h) × [1 / (ad / c² + 1)] × sqrt(1 + 2Φ / c²)
-- ✅ Causal reinterpretation of **light bending** via refractive index: n(r) = 1 / sqrt(1 - 2GM / (r·c²))
+- ✅ Unified tick dilation formula:  R_eff = (mc² / h) × [1 / (ad / c² + 1)] × √(1 + 2Φ / c²)
+- ✅ Causal reinterpretation of **light bending** via refractive index: n(r) = 1 / √(1 - 2GM / (r·c²))
 
 ---
 
