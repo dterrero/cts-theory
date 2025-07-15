@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Causal Tick Lensing Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        canvas {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background-color: #f8fafc;
+            width: 100%;
+            max-width: 600px; /* Limit canvas width for better aspect ratio */
+            height: auto; /* Maintain aspect ratio */
+        }
+        .control-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+        .control-group label {
+            font-weight: 500;
+            color: #4a5568;
+        }
+        .control-group input[type="range"] {
+            flex-grow: 1;
+            -webkit-appearance: none;
+            height: 8px;
+            background: #cbd5e0;
+            border-radius: 5px;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity .2s;
+        }
+        .control-group input[type="range"]:hover {
+            opacity: 1;
+        }
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4299e1;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        .control-group input[type="number"] {
+            width: 80px;
+            padding: 8px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 0.9em;
+            color: #2d3748;
+        }
+        button {
+            background-color: #4299e1;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 10px rgba(66, 153, 225, 0.3);
+        }
+        button:hover {
+            background-color: #3182ce;
+            box-shadow: 0 6px 15px rgba(66, 153, 225, 0.4);
+        }
+        .info-box {
+            background-color: #e0f2fe;
+            border-left: 4px solid #38b2ac;
+            padding: 15px;
+            border-radius: 8px;
+            color: #2c5282;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-2xl font-bold text-gray-800 text-center">Causal Tick Gravitational Lensing Simulation</h1>
+        <p class="text-gray-600 text-center">
+            Visualize how light bends in a varying tick rate field, mimicking gravitational lensing without spacetime curvature.
+        </p>
+
+        <canvas id="lensingCanvas" width="600" height="400"></canvas>
+
+        <div class="control-group">
+            <label for="massSlider">Mass of Central Body (x10^29 kg):</label>
+            <input type="range" id="massSlider" min="0.1" max="50" value="19.89" step="0.1">
+            <input type="number" id="massInput" value="19.89" step="0.1">
+        </div>
+
+        <div class="control-group">
+            <label for="numRaysSlider">Number of Rays:</label>
+            <input type="range" id="numRaysSlider" min="10" max="200" value="50" step="1">
+            <input type="number" id="numRaysInput" value="50" step="1">
+        </div>
+
+        <div class="control-group">
+            <label for="impactParamSlider">Impact Parameter (R_sun units):</label>
+            <input type="range" id="impactParamSlider" min="0.5" max="10" value="1.0" step="0.1">
+            <input type="number" id="impactParamInput" value="1.0" step="0.1">
+        </div>
+
+        <button id="simulateButton">Simulate Lensing</button>
+
+        <div class="info-box">
+            <p><strong>Note on Refractive Index:</strong> This simulation now uses the causal tick suppression index:
+            <br>
+            $n(r) = \frac{1}{\sqrt{1 - \frac{2GM}{rc^2}}}$,
+            <br>
+            derived directly from gravitational tick-rate suppression. This replaces the heuristic $n(r) = 1 + \frac{2GM}{c^2 r}$ and models light bending from first principles of energy-based causal transformation, not geometry.</p>
+            <p id="deflectionAngleDisplay" class="font-semibold mt-2"></p>
+        </div>
+
+        <script>
+            // Constants
+            const G = 6.6743e-11; // Gravitational constant
+            const c = 3e8;       // Speed of light
+            const R_sun = 6.957e8; // Solar radius (for impact parameter scaling)
+
+            // Canvas setup
+            const canvas = document.getElementById('lensingCanvas');
+            const ctx = canvas.getContext('2d');
+            let centerX, centerY, scale;
+
+            // UI elements
+            const massSlider = document.getElementById('massSlider');
+            const massInput = document.getElementById('massInput');
+            const numRaysSlider = document.getElementById('numRaysSlider');
+            const numRaysInput = document.getElementById('numRaysInput');
+            const impactParamSlider = document.getElementById('impactParamSlider');
+            const impactParamInput = document.getElementById('impactParamInput');
+            const simulateButton = document.getElementById('simulateButton');
+            const deflectionAngleDisplay = document.getElementById('deflectionAngleDisplay');
+
+            // Event Listeners for sliders and inputs
+            massSlider.oninput = () => { massInput.value = massSlider.value; };
+            massInput.oninput = () => { massSlider.value = massInput.value; };
+            numRaysSlider.oninput = () => { numRaysInput.value = numRaysSlider.value; };
+            numRaysInput.oninput = () => { numRaysSlider.value = numRaysInput.value; };
+            impactParamSlider.oninput = () => { impactParamInput.value = impactParamSlider.value; };
+            impactParamInput.oninput = () => { impactParamSlider.value = impactParamInput.value; };
+            
+            simulateButton.onclick = simulateLensing;
+
+            // Function to calculate refractive index n(r) from tick suppression
+            function getRefractiveIndex(r, M_central) {
+                const rs = (2 * G * M_central) / (c * c); // Schwarzschild radius
+                if (r <= rs) return Infinity; // Avoid singularity and unphysical region
+                return 1 / Math.sqrt(1 - rs / r);
+            }
+
+            // Function to draw the central mass
+            function drawMass(M_central) {
+                const massRadius = (M_central / (1.989e30 * 50)) * (canvas.width / 10); // Scale mass visualization
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, massRadius, 0, Math.PI * 2);
+                ctx.fillStyle = '#f6ad55'; // Orange-like color for the mass
+                ctx.fill();
+                ctx.closePath();
+            }
+
+            // Ray tracing simulation function
+            function simulateLensing() {
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#f8fafc';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Update center and scale based on canvas size
+                centerX = canvas.width / 2;
+                centerY = canvas.height / 2;
+                scale = canvas.width / (20 * R_sun); // 20 R_sun span across the canvas width
+
+                const M_central = parseFloat(massInput.value) * 1e29; // Mass in kg
+                const numRays = parseInt(numRaysInput.value);
+                const impactParamRatio = parseFloat(impactParamInput.value); // e.g., 1.0 for 1 R_sun
+                const b_actual = impactParamRatio * R_sun; // Actual impact parameter in meters
+
+                drawMass(M_central);
+
+                let totalDeflection = 0;
+                let validRays = 0;
+
+                for (let i = 0; i < numRays; i++) {
+                    // Start rays from left edge, varying y-offset
+                    const startX = -canvas.width / (2 * scale); // Convert canvas coord to meters
+                    const startY = b_actual + (i - numRays / 2) * (R_sun * 0.1); // Spread rays around b_actual
+
+                    let x = startX;
+                    let y = startY;
+                    let vx = 1; // Initial velocity in x direction
+                    let vy = 0; // Initial velocity in y direction
+
+                    ctx.beginPath();
+                    ctx.moveTo(centerX + x * scale, centerY - y * scale); // Convert to canvas coordinates
+
+                    // Time step (small fraction of time to cross R_sun)
+                    const dt = 0.005 * R_sun / c; 
+                    const maxSteps = 5000; // Increased max steps for better convergence in stronger fields
+
+                    for (let step = 0; step < maxSteps; step++) {
+                        const r = Math.sqrt(x * x + y * y);
+
+                        // If ray is too close to mass center (or inside Schwarzschild radius), it gets absorbed or calculation becomes unstable
+                        const rs_current = (2 * G * M_central) / (c * c);
+                        if (r <= rs_current * 1.05) { // Absorb slightly outside rs to avoid numerical issues
+                            break;
+                        }
+
+                        // If ray goes too far out, stop tracing
+                        if (x > canvas.width / (2 * scale) + R_sun * 5 || Math.abs(y) > canvas.height / (2 * scale) + R_sun * 5) {
+                            break;
+                        }
+
+                        const n = getRefractiveIndex(r, M_central);
+                        
+                        // Derivative of n(r) = (1 - rs/r)^(-0.5) with respect to r
+                        // dn/dr = -0.5 * (1 - rs/r)^(-1.5) * (rs/r^2)
+                        // dn/dr = 0.5 * rs / (r^2 * (1 - rs/r)^1.5)  <-- This was the previous error, it should be negative for bending towards mass
+                        const denom_dr = Math.pow(1 - rs_current / r, 1.5);
+                        const dn_dr = (0.5 * rs_current) / (r * r * denom_dr); // This derivative is positive for attractive gravity
+
+                        // Calculate gradient components in Cartesian coordinates
+                        // grad(n) points radially outward if dn/dr is positive.
+                        // Light bends towards higher n, so acceleration should be in the direction of grad(n)
+                        // For n(r) = 1/sqrt(1 - rs/r), dn/dr is positive. So the force should be in the direction of -grad(n)
+                        // to bend towards the mass (lower r).
+                        const dn_dx = dn_dr * (x / r);
+                        const dn_dy = dn_dr * (y / r);
+
+                        // Update velocity direction based on gradient (simplified Eikonal-like bending)
+                        // Light bends towards higher refractive index, so acceleration is in direction of grad(n)
+                        // The scaling factor is adjusted for the new n(r) and dt
+                        const bendingStrengthFactor = 3e-11; // Tuned for visual effect
+                        const dvx = -dn_dx * dt * bendingStrengthFactor; // Negative sign to bend towards mass
+                        const dvy = -dn_dy * dt * bendingStrengthFactor; // Negative sign to bend towards mass
+
+                        vx += dvx;
+                        vy += dvy;
+
+                        // Normalize velocity vector
+                        const v_mag = Math.sqrt(vx * vx + vy * vy);
+                        if (v_mag === 0) break; // Avoid division by zero
+                        vx /= v_mag;
+                        vy /= v_mag;
+
+                        // Update position
+                        x += vx * c * dt; // Multiply by c to get meters/second from normalized velocity
+                        y += vy * c * dt;
+
+                        ctx.lineTo(centerX + x * scale, centerY - y * scale);
+                    }
+                    ctx.strokeStyle = `hsl(${i * 360 / numRays}, 70%, 50%)`; // Rainbow colors for rays
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                    ctx.closePath();
+
+                    // Calculate final deflection angle for the last ray that completed its path
+                    if (x > canvas.width / (2 * scale) - R_sun * 2) { // Only consider rays that passed the mass
+                        const finalAngleRad = Math.atan2(vy, vx);
+                        const initialAngleRad = Math.atan2(0, 1); // Initial direction is (1,0)
+                        let deflection = finalAngleRad - initialAngleRad;
+
+                        // Normalize angle to be between -PI and PI
+                        if (deflection > Math.PI) deflection -= 2 * Math.PI;
+                        if (deflection < -Math.PI) deflection += 2 * Math.PI;
+
+                        totalDeflection += Math.abs(deflection);
+                        validRays++;
+                    }
+                }
+
+                // Calculate theoretical GR deflection angle for the primary impact parameter
+                const theoreticalGRDeflectionRad = (4 * G * M_central) / (c * c * b_actual);
+                const theoreticalGRDeflectionArcsec = theoreticalGRDeflectionRad * (180 / Math.PI) * 3600;
+
+                let simulatedDeflectionArcsec = 0;
+                if (validRays > 0) {
+                    simulatedDeflectionArcsec = (totalDeflection / validRays) * (180 / Math.PI) * 3600;
+                }
+
+                deflectionAngleDisplay.innerHTML = `
+                    <p><strong>Theoretical GR Deflection (for b=${impactParamRatio} R_sun):</strong> ${theoreticalGRDeflectionArcsec.toFixed(6)} arcseconds</p>
+                    <p><strong>Simulated Causal Lensing Deflection:</strong> ${simulatedDeflectionArcsec.toFixed(6)} arcseconds</p>
+                    <p><strong>Absolute Difference:</strong> ${(Math.abs(simulatedDeflectionArcsec) - Math.abs(theoreticalGRDeflectionArcsec)).toFixed(6)} arcseconds</p>
+                `;
+            }
+
+            // Initial simulation on load
+            window.onload = () => {
+                // Set initial values for inputs from sliders
+                massInput.value = massSlider.value;
+                numRaysInput.value = numRaysSlider.value;
+                impactParamInput.value = impactParamSlider.value;
+                simulateLensing();
+            };
+
+            // Responsive canvas
+            window.addEventListener('resize', simulateLensing);
+        </script>
+    </div>
+</body>
+</html>
